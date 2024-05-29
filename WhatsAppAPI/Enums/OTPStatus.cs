@@ -2,12 +2,13 @@
 {
     public enum OTPStatus
     {
-        UNUSED,
-        USED,
-        EXPIRED,
-        INVALID,
-        VALID,
-        FAILURE,
-        SUCCESS
+        Unused,
+        Used,
+        Expired,
+        Invalid,
+        Valid,
+        Failure,
+        Success,
+        Validation
     }
 }

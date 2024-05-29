@@ -36,7 +36,8 @@ namespace WhatsAppAPI.Services
                     return new OTPManagerResponses
                     {
                         Message = "The phone number field is required.",
-                        IsSuccess = false
+                        IsSuccess = false,
+                        Status = Enum.GetName(typeof(OTPStatus), OTPStatus.Validation)
                     };
 
                 TwilioClient.Init(_configuration["AuthSettings:AccountSId"], _configuration["AuthSettings:AuthToken"]);
@@ -57,7 +58,7 @@ namespace WhatsAppAPI.Services
                 mapper.CreatedOn = DateTime.Now.GetDateUtcNow();
                 mapper.Message = messageOptions.Body;
                 mapper.OTPToken = otp;
-                mapper.Status = OTPStatus.UNUSED;
+                mapper.Status = OTPStatus.Unused;
 
                 _dbContext.OTPs.Add(mapper);
                 var result = await _dbContext.SaveChangesAsync();
@@ -70,13 +71,14 @@ namespace WhatsAppAPI.Services
                         IsSuccess = true,
                         CreatedOn = mapper.CreatedOn,
                         ExpiresOn = mapper.ExpiresOn,
-                        Status=Enum.GetName(typeof(OTPStatus), OTPStatus.SUCCESS)
+                        Status = Enum.GetName(typeof(OTPStatus), OTPStatus.Success)
                     };
 
                 return new OTPManagerResponses
                 {
                     ErrorMessage = "An error occurred while trying to save the OTP details",
-                    IsSuccess = false
+                    IsSuccess = false,
+                    Status = Enum.GetName(typeof(OTPStatus), OTPStatus.Validation)
                 };
             }
             catch (Exception ex)
@@ -84,7 +86,8 @@ namespace WhatsAppAPI.Services
                 return new OTPManagerResponses
                 {
                     ErrorMessage = ex.Message,
-                    IsSuccess = false
+                    IsSuccess = false,
+                    Status = Enum.GetName(typeof(OTPStatus), OTPStatus.Failure)
                 };
             }
         }
@@ -95,13 +98,12 @@ namespace WhatsAppAPI.Services
                 throw new NullReferenceException("Login model is null");
 
             if (model.OTP.IsNullOrEmpty())
-            {
                 return new OTPManagerResponses
                 {
                     Message = "OTP field cannot be empty.",
-                    IsSuccess = false
+                    IsSuccess = false,
+                    Status = Enum.GetName(typeof(OTPStatus), OTPStatus.Validation)
                 };
-            }
 
             var otp = await _dbContext.OTPs.FirstOrDefaultAsync(e => e.OTPToken.Equals(model.OTP) && e.ToPhoneNumber.Equals(model.ToPhoneNumber));
 
@@ -109,34 +111,34 @@ namespace WhatsAppAPI.Services
                 return new OTPManagerResponses
                 {
                     ErrorMessage = "Invalid OTP.",
-                    IsSuccess = false, 
-                     Status = Enum.GetName(typeof(OTPStatus), OTPStatus.INVALID)
+                    IsSuccess = false,
+                    Status = Enum.GetName(typeof(OTPStatus), OTPStatus.Invalid)
                 };
 
-            if (otp.Status.Equals(OTPStatus.USED))
+            if (otp.Status.Equals(OTPStatus.Used))
                 return new OTPManagerResponses
                 {
                     ErrorMessage = "This OTP has been used.",
-                    IsSuccess = false, 
-                     Status = Enum.GetName(typeof(OTPStatus), OTPStatus.USED)
+                    IsSuccess = false,
+                    Status = Enum.GetName(typeof(OTPStatus), OTPStatus.Used)
                 };
 
             if (otp.ExpiresOn <= DateTime.Now.GetDateUtcNow())
                 return new OTPManagerResponses
                 {
                     ErrorMessage = "This OTP has expired.",
-                    IsSuccess = false, 
-                     Status = Enum.GetName(typeof(OTPStatus), OTPStatus.EXPIRED)
+                    IsSuccess = false,
+                    Status = Enum.GetName(typeof(OTPStatus), OTPStatus.Expired)
                 };
 
 
-            otp.Status = OTPStatus.USED;
+            otp.Status = OTPStatus.Used;
             _dbContext.OTPs.Update(otp);
             var result = await _dbContext.SaveChangesAsync();
             if (result > 0)
                 return new OTPManagerResponses
-                { 
-                    Status = Enum.GetName(typeof(OTPStatus), OTPStatus.VALID),
+                {
+                    Status = Enum.GetName(typeof(OTPStatus), OTPStatus.Valid),
                     IsSuccess = true,
                     Message = "Validation completed successfully."
                 };
@@ -144,8 +146,8 @@ namespace WhatsAppAPI.Services
             return new OTPManagerResponses
             {
                 ErrorMessage = "Validation failed.",
-                IsSuccess = false, 
-                 Status = Enum.GetName(typeof(OTPStatus), OTPStatus.FAILURE)
+                IsSuccess = false,
+                Status = Enum.GetName(typeof(OTPStatus), OTPStatus.Failure)
             };
         }
     }
